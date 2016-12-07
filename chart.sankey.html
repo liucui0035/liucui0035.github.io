@@ -107,7 +107,7 @@ var tip = d3.tip()
     })
 
 
-d3.json("https://bost.ocks.org/mike/sankey/energy.json", function(energy) {
+d3.json("./sankey.json", function(energy) {
 
     sankey
         .nodes(energy.nodes)
