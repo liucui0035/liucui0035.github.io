@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>d3.chart.sankey (product demo)</title>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://cdn.rawgit.com/newrelic-forks/d3-plugins-sankey/master/sankey.js"></script>
+    <script src="https://cdn.rawgit.com/misoproject/d3.chart/master/d3.chart.min.js"></script>
+    <script src="https://cdn.rawgit.com/q-m/d3.chart.sankey/master/d3.chart.sankey.min.js"></script>
+    <script src="https://cdn.rawgit.com/Caged/d3-tip/master/index.js"></script>
+    <style>
+        body {
+            padding: 10px;
+            min-width: 600px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        #chart {
+            height: 500px;
+            font: 13px sans-serif;
+        }
+
+        .node:hover rect {
+            fill: #9cd4c3;
+        }
+
+        .node rect {
+            shape-rendering: crispEdges;
+            fill: rgb(181, 224, 211);
+            stroke-width: 1;
+            stroke: rgb(169, 169, 169);
+        }
+
+        .node text {
+            color: #fff;
+        }
+
+        .d3-tip {
+            background-color: #191a1f;
+            color: #fff;
+            font-size: 12px;
+            padding: 10px;
+            width: 150px;
+            box-sizing: border-box;
+            box-shadow: 3px 3px 8px 0px rgba(0, 0, 0, .4);
+        }
+
+        .d3-tip p {
+            margin: 0;
+        }
+
+        .link {
+            fill: none;
+            stroke: #000;
+            stroke-opacity: .2;
+        }
+    </style>
+</head>
+<body>
+<div id="chart"></div>
+
+<script>
+    var colors = {
+        'environment': '#edbd00',
+        'social': '#367d85',
+        'animals': '#97ba4c',
+        'health': '#f5662b',
+        'research_ingredient': '#3f3e47',
+        'fallback': '#9f9fa3'
+    };
+
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset(function() {
+            return [this.getBBox().height / 2, 80]
+        })
+        .html(function(d) {
+             var html =
+                 "<p class='name'><strong>URL: </strong> <span>" +
+                 d.name +
+                 "</span></p><p><strong>In: </strong><span>" +
+                 d.targetLinks.length +
+                 "</span></p><p><strong>Out: </strong><span>" +
+                 d.sourceLinks.length +
+                 "</span></p>";
+
+//            var html =
+//                "<p class='name'><strong>Promotion: </strong> <span>" +
+//                d.promotion_id +
+//                "</span></p><p><strong>In: </strong><span>" +
+//                d.targetLinks.length +
+//                "</span></p><p><strong>Out: </strong><span>" +
+//                d.sourceLinks.length +
+//                "</span></p>";
+            return html;
+        })
+    d3.json("./data/sankey.json", function (error, json) {
+        var chart = d3.select("#chart").append("svg").chart("Sankey.Path");
+
+        chart
+            .name(label)
+            .colorNodes(function (name, node) {
+                return color(node, 1) || colors.fallback;
+            })
+            .colorLinks(function (link) {
+                return color(link.source, 4) || color(link.target, 1) || colors.fallback;
+            })
+            .nodeWidth(30)
+            .nodePadding(10)
+            .spread(true)
+            .iterations(0)
+            .draw(json);
+
+        var node = d3.selectAll("#chart .node rect")
+            .on('mouseover', function(d) {
+                var target = d3.select(this).select('rect')[0][0];
+                tip.show.call(this, d, target);
+            })
+            .on('mouseout', tip.hide);
+
+        d3.selectAll('#chart svg').call(tip);
+
+        function label(node) {
+            return node.name;
+        }
+
+        function color(node, depth) {
+
+            return '#367d85';
+
+            var id = node.id.replace(/(_score)?(_\d+)?$/, '');
+            if (colors[id]) {
+                return colors[id];
+            } else if (depth > 0 && node.targetLinks && node.targetLinks.length == 1) {
+                return color(node.targetLinks[0].source, depth - 1);
+            } else {
+                return '#367d85';
+            }
+        }
+    });
+</script>
+
+
+<!--<script>
+    var margin = {top: 1, right: 1, bottom: 6, left: 1},
+        width = 800 - margin.left - margin.right,
+        height = 800 - margin.top - margin.bottom;
+
+    var formatNumber = d3.format(",.0f"),
+        format = function(d) { return formatNumber(d) + " TWh"; },
+        color = d3.scale.category20();
+
+    var svg = d3.select("#chart").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var sankey = d3.sankey()
+        .nodeWidth(150)
+        .nodePadding(20)
+        .size([width, height]);
+
+    var path = sankey.link();
+
+    //node rect function
+    function nodeHeight(d) {
+        return d.dy;
+    //    return d.dy < 20 ? 20: d.dy;
+    }
+
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset(function() {
+            return [this.getBBox().height / 2, 160]
+        })
+        .html(function(d) {
+            // var html =
+            //     "<p class='name'><strong>URL: </strong> <span>" +
+            //     d.name +
+            //     "</span></p><p><strong>In: </strong><span>" +
+            //     d.targetLinks.length +
+            //     "</span></p><p><strong>Out: </strong><span>" +
+            //     d.sourceLinks.length +
+            //     "</span></p>";
+
+            var html =
+                "<p class='name'><strong>Promotion: </strong> <span>" +
+                d.promotion_id +
+                "</span></p><p><strong>In: </strong><span>" +
+                d.targetLinks.length +
+                "</span></p><p><strong>Out: </strong><span>" +
+                d.sourceLinks.length +
+                "</span></p>";
+            return html;
+        })
+
+
+    d3.json("./data/log.json", function(energy) {
+
+        sankey
+            .nodes(energy.nodes)
+            .links(energy.links)
+            .layout(32);
+
+        var link = svg.append("g").selectAll(".link")
+            .data(energy.links)
+            .enter().append("path")
+            .attr("class", "link")
+            .attr("d", path)
+            .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+            .sort(function(a, b) { return b.dy - a.dy; });
+
+        link.append("title")
+            .text(function(d) {
+                return d.source.name + " → " + d.target.name + "\n" + format(d.value);
+            });
+
+        var node = svg.append("g").selectAll(".node")
+            .data(energy.nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+            .on('mouseover', function(d) {
+                var target = d3.select(this).select('rect')[0][0];
+                tip.show.call(this, d, target);
+            })
+            .on('mouseout', tip.hide)
+            .call(d3.behavior.drag()
+                .origin(function(d) { return d; })
+                .on("dragstart", function() { this.parentNode.appendChild(this); })
+                .on("drag", dragmove));
+
+        node.append("rect")
+            .attr("height", nodeHeight)
+            .attr("width", sankey.nodeWidth())
+            .append("title")
+            .text(function(d) { return d.name + "\n" + format(d.value); });
+
+        node.append("text")
+            .attr("x", 10)
+            .attr("y", 10)
+    //        .attr("y", function(d) { return d.dy / 2; })
+            .attr("dy", ".35em")
+            .style("fill", "#333")
+            .attr("text-anchor", "start")
+            .attr("transform", null)
+            .text(function(d) { return d.promotion_id; })
+            .filter(function(d) { return d.dy < 15; })
+            .attr("y", function(d) { return d.dy+5; })
+            .style("fill", "#000")
+
+        svg.call(tip);
+
+
+        function dragmove(d) {
+            d3.select(this).attr("transform", "translate(" + d.x + "," + (d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))) + ")");
+            sankey.relayout();
+            link.attr("d", path);
+        }
+    });
+
+</script>-->
+</body>
+</html>
